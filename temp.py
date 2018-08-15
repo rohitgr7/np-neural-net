@@ -16,8 +16,11 @@ def convert_dict_to_vec(di, keys):
     return np.array(ret).reshape((-1, 1))
 
 
-X = np.random.randn(1, 10)
-y = np.random.randint(0, 1, size=(1, 10))
+X = np.random.randn(2, 10)
+y = np.random.randint(0, 5, size=(2))
+one_hot = np.zeros_like(X)
+one_hot[range(X.shape[0]), y] = 1
+y = one_hot
 
 net = NeuralNet([10, 10, 10, 10, 10], ['linear', 'lrelu', 'tanh', 'relu', 'sigmoid'], [1.0, 1.0, 1.0, 1.0, 1.0], input_dim=10, lalpha=[0.2, 0.2, 0.2])
 net.compile(optimizer='sgd', loss='categorical_crossentropy', learning_rate=1e-2)
