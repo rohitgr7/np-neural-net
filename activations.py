@@ -12,22 +12,20 @@ def relu_backward(dA, cache):
 
 def sigmoid_forward(Z):
     sig_Z = 1. / (1 + np.exp(-Z))
-    return sig_Z, Z
+    return sig_Z, sig_Z
 
 
 def sigmoid_backward(dA, cache):
-    sig_f, _ = sigmoid_forward(cache)
-
-    return dA * sig_f * (1 - sig_f)
+    return dA * cache * (1 - cache)
 
 
 def tanh_forward(Z):
     tanh_Z = np.tanh(Z)
-    return tanh_Z, Z
+    return tanh_Z, tanh_Z
 
 
 def tanh_backward(dA, cache):
-    return dA * (1 - np.tanh(cache)**2)
+    return dA * (1 - cache**2)
 
 
 def lrelu_forward(Z, alpha):

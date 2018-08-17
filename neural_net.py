@@ -6,7 +6,7 @@ from optimizers import *
 
 
 def _init_weights_and_bias(shape_in, shape_out):
-    return np.random.randn(shape_in, shape_out) * 0.01, np.zeros((1, shape_out))
+    return np.random.randn(shape_in, shape_out) * np.sqrt(2 / (shape_in + shape_out)), np.zeros((1, shape_out))
 
 
 class NeuralNet:
@@ -21,14 +21,14 @@ class NeuralNet:
         self.lalpha = lalpha
 
     def compile(self, optimizer, loss, learning_rate):
-        self.parameters = {}
+        self.params = {}
 
         shape_in = self.input_dim
 
         # Parameters
         for l in range(len(self.layers)):
             shape_out = self.layers[l]
-            self.parameters[f'W{l}'], self.parameters[f'b{l}'] = _init_weights_and_bias(shape_in, shape_out)
+            self.params[f'W{l}'], self.params[f'b{l}'] = _init_weights_and_bias(shape_in, shape_out)
 
             shape_in = shape_out
 
@@ -61,14 +61,11 @@ class NeuralNet:
         elif loss == 'sparse_categorical_crossentropy':
             self.loss_fn = SparseSoftmaxCrossEntropy()
 
-    def update_parameter(self, k, ep):
-        self.parameters[k] += ep
-
     def _forward(self, inp_layer, dropout=False):
         caches = []
 
         for l in range(len(self.layers)):
-            W, b = self.parameters[f'W{l}'], self.parameters[f'b{l}']
+            W, b = self.params[f'W{l}'], self.params[f'b{l}']
             activation = self.activations[l]
             keep_prob = 1.0
 
@@ -76,7 +73,8 @@ class NeuralNet:
                 keep_prob = self.keep_probs[l]
 
             # Linear forward
-            out_layer = inp_layer.dot(W) + b
+            out_layer = inp_layer.dot(W)
+            out_layer += b
             linear_cache = (inp_layer, W)
             activation_cache = None
 
@@ -94,7 +92,7 @@ class NeuralNet:
                 out_layer, activation_cache = tanh_forward(out_layer)
 
             # Dropout
-            dropout_mask = np.random.rand(1, self.layers[l]) < keep_prob
+            dropout_mask = np.random.rand(out_layer.shape[0], out_layer.shape[1]) < keep_prob
             out_layer = out_layer * dropout_mask
             out_layer /= keep_prob
 
@@ -103,45 +101,44 @@ class NeuralNet:
 
         return out_layer, caches
 
-    def train(self, X_train, y_train, return_grads=True, return_loss=True):
+    def train(self, X_train, y_train):
 
-        # Forward Propagation
-        out_layer, caches = self._forward(X_train, dropout=True)
-        loss = self.loss_fn.forward(out_layer, y_train)
-        if return_loss:
-            return loss
+        for epoch in range(self.epochs):
 
-        # Backward Propagation
-        grads = {}
-        dA = self.loss_fn.backward()
+            # Forward Propagation
+            out_layer, caches = self._forward(X_train, dropout=True)
+            loss = self.loss_fn.forward(out_layer, y_train)
 
-        for l in reversed(range(len(self.layers))):
-            linear_cache, activation_cache, dropout_cache = caches[l]
-            activation = self.activations[l]
+            # Backward Propagation
+            grads = {}
+            dA = self.loss_fn.backward()
 
-            # Dropout Backward
-            dA *= dropout_cache
-            dZ = dA
+            for l in reversed(range(len(self.layers))):
+                linear_cache, activation_cache, dropout_cache = caches[l]
+                activation = self.activations[l]
 
-            # Activation Backward
-            if activation == 'relu':
-                dZ = relu_backward(dA, activation_cache)
-            elif activation == 'sigmoid':
-                dZ = sigmoid_backward(dA, activation_cache)
-            elif activation == 'lrelu':
-                dZ = lrelu_backward(dA, activation_cache)
-            elif activation == 'tanh':
-                dZ = tanh_backward(dA, activation_cache)
+                # Dropout Backward
+                dA *= dropout_cache
+                dZ = dA
 
-            X, W = linear_cache
-            grads[f'W{l}'] = X.T.dot(dZ) / X.shape[0]
-            grads[f'b{l}'] = np.sum(dZ, axis=0, keepdims=True) / X.shape[0]
-            dA = dZ.dot(W.T)
+                # Activation Backward
+                if activation == 'relu':
+                    dZ = relu_backward(dA, activation_cache)
+                elif activation == 'sigmoid':
+                    dZ = sigmoid_backward(dA, activation_cache)
+                elif activation == 'lrelu':
+                    dZ = lrelu_backward(dA, activation_cache)
+                elif activation == 'tanh':
+                    dZ = tanh_backward(dA, activation_cache)
 
-        # self.paramters = self.optimizer.optimize(grads, self.parameters)
+                X, W = linear_cache
+                grads[f'W{l}'] = X.T.dot(dZ) / X.shape[0]
+                grads[f'b{l}'] = np.sum(dZ, axis=0, keepdims=True) / X.shape[0]
+                dA = dZ.dot(W.T)
 
-        if return_grads:
-            return grads
+            self.params = self.optimizer.optimize(self.params, grads)
+
+            print(f'Loss: {loss}')
 
     def predict(self, X_test):
         out_layer, _ = self._forward(X_test, dropout=False)
