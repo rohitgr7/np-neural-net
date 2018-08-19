@@ -12,8 +12,17 @@ def _init_weights_and_bias(shape_in, shape_out):
 
 class NeuralNet:
 
-    def __init__(self, layers, activations, keep_probs, input_dim, lalpha=None):
-        assert len(layers) == len(activations) == len(keep_probs)
+    def __init__(self, layers, input_dim, activations=None, keep_probs=None, lalpha=None):
+        if keep_probs is None:
+            keep_probs = [1.0] * len(layers)
+
+        if lalpha is None:
+            lalpha = [0.2] * len(layers)
+
+        if activations is None:
+            activations = ['linear'] * len(layers)
+
+        assert len(layers) == len(activations) == len(keep_probs) == len(lalpha)
 
         self.layers = layers
         self.activations = activations
@@ -35,6 +44,9 @@ class NeuralNet:
             shape_in = shape_out
 
         # Optimizer
+        if not isinstance(optimizer, str):
+            self.optimizer = optimizers
+
         if optimizer == 'sgd':
             self.optimizer = SGD(learning_rate)
 
@@ -141,18 +153,23 @@ class NeuralNet:
                     grads[f'b{l}'] = np.sum(dZ, axis=0, keepdims=True) / X.shape[0]
                     dA = dZ.dot(W.T)
 
-                self.params = self.optimizer.optimize(self.params, grads)
+                self.params = self.optimizer.optimize(self.params, grads, itr)
 
             loss /= itr
+
             if self.model_type == 'regression':
                 print(f'Epoch {epoch}/100 \t Loss: {loss:.4f}')
+
             else:
                 train_preds = self.predict(X_train)
                 train_acc = classification_accuracy(y_train, train_preds)
+
                 if validation_data:
                     val_preds = self.predict(validation_data[0])
                     valid_acc = classification_accuracy(validation_data[1], val_preds)
+
                     print(f'Epoch {epoch}/100 \t Loss: {loss:.4f} \t Train_acc: {train_acc:.4f} \t Validation_acc: {valid_acc:.4f}')
+
                 else:
                     print(f'Epoch {epoch}/100 \t Loss: {loss:.4f} \t Train_acc: {train_acc:.4f}')
 

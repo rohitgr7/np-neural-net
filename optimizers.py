@@ -16,7 +16,8 @@ class SGD:
     def __init__(self, learning_rate):
         self.learning_rate = learning_rate
 
-    def optimize(self, params, grads):
+    def optimize(self, *args):
+        params, grads, _ = args
 
         for k in list(params.keys()):
             params[k] -= self.learning_rate * grads[k]
@@ -27,12 +28,14 @@ class SGD:
 # SGD Momentum
 class SGDMom:
 
-    def __init__(self, learning_rate):
+    def __init__(self, learning_rate, gamma=0.9):
         self.init_hp = False
         self.learning_rate = learning_rate
-        self.gamma = 0.9
+        self.gamma = gamma
 
-    def optimize(self, params, grads):
+    def optimize(self, *args):
+        params, grads, _ = args
+
         if not self.init_hp:
             self.momentum = _init_hparams(params)
             self.init_hp = True
@@ -47,12 +50,14 @@ class SGDMom:
 # AdaGrad
 class AdaGrad:
 
-    def __init__(self, learning_rate):
+    def __init__(self, learning_rate, epsilon=1e-8):
         self.init_hp = False
         self.learning_rate = learning_rate
-        self.epsilon = 1e-8
+        self.epsilon = epsilon
 
-    def optimize(self, params, grads):
+    def optimize(self, *args):
+        params, grads, _ = args
+
         if not self.init_hp:
             self.cache = _init_hparams(params)
             self.init_hp = True
@@ -67,13 +72,15 @@ class AdaGrad:
 # RMSProp
 class RMSProp:
 
-    def __init__(self, learning_rate):
+    def __init__(self, learning_rate, beta=0.9, epsilon=1e-8):
         self.init_hp = False
         self.learning_rate = learning_rate
-        self.beta = 0.99
-        self.epsilon = 1e-8
+        self.beta = beta
+        self.epsilon = epsilon
 
-    def optimize(self, params, grads):
+    def optimize(self, *args):
+        params, grads, _ = args
+
         if not self.init_hp:
             self.cache = _init_hparams(params)
             self.init_hp = True
@@ -88,14 +95,16 @@ class RMSProp:
 # Adam
 class Adam:
 
-    def __init__(self, learning_rate):
+    def __init__(self, learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-8):
         self.init_hp = False
         self.learning_rate = learning_rate
-        self.beta1 = 0.9
-        self.beta2 = 0.99
-        self.epsilon = 1e-8
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.epsilon = epsilon
 
-    def optimize(self, params, grads, itr):
+    def optimize(self, *args):
+        params, grads, itr = args
+
         if not self.init_hp:
             self.first_momentum = _init_hparams(params)
             self.second_momentum = _init_hparams(params)

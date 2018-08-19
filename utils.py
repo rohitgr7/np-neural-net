@@ -20,6 +20,9 @@ def generate_batch(X, y, batch_size, shuffle=True):
 
 
 def classification_accuracy(y_true, y_pred):
+    if (y_true.shape[-1] == y_pred.shape[-1]):
+        y_true = np.argmax(y_true, axis=-1)
+
     y_pred = np.argmax(y_pred, axis=-1)
     y_true = y_true.reshape(-1)
 
