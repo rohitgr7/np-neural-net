@@ -3,6 +3,7 @@ import numpy as np
 from activations import *
 from losses import *
 from optimizers import *
+from utils import *
 
 
 def _init_weights_and_bias(shape_in, shape_out):
@@ -22,6 +23,7 @@ class NeuralNet:
 
     def compile(self, optimizer, loss, learning_rate):
         self.params = {}
+        self.model_type = 'classification'
 
         shape_in = self.input_dim
 
@@ -42,9 +44,6 @@ class NeuralNet:
         elif optimizer == 'adagrad':
             self.optimizer = AdaGrad(learning_rate)
 
-        elif optimizer == 'adagrad':
-            self.optimizer = AdaGrad(learning_rate)
-
         elif optimizer == 'rmsprop':
             self.optimizer = RMSProp(learning_rate)
 
@@ -54,6 +53,7 @@ class NeuralNet:
         # Loss
         if loss == 'mean_squared_error':
             self.loss_fn = MSE()
+            self.model_type = 'regression'
         elif loss == 'binary_crossentropy':
             self.loss_fn = BinaryCrossEntropy()
         elif loss == 'categorical_crossentropy':
@@ -101,44 +101,60 @@ class NeuralNet:
 
         return out_layer, caches
 
-    def train(self, X_train, y_train):
+    def train(self, X_train, y_train, epochs=1, batch_size=1, validation_data=None):
 
-        for epoch in range(self.epochs):
+        for epoch in range(epochs):
+            loss = 0.0
+            itr = 0
 
-            # Forward Propagation
-            out_layer, caches = self._forward(X_train, dropout=True)
-            loss = self.loss_fn.forward(out_layer, y_train)
+            for batch_X, batch_y in generate_batch(X_train, y_train, batch_size):
 
-            # Backward Propagation
-            grads = {}
-            dA = self.loss_fn.backward()
+                # Forward Propagation
+                out_layer, caches = self._forward(batch_X, dropout=True)
+                loss += self.loss_fn.forward(out_layer, batch_y)
+                itr += 1
 
-            for l in reversed(range(len(self.layers))):
-                linear_cache, activation_cache, dropout_cache = caches[l]
-                activation = self.activations[l]
+                # Backward Propagation
+                grads = {}
+                dA = self.loss_fn.backward()
 
-                # Dropout Backward
-                dA *= dropout_cache
-                dZ = dA
+                for l in reversed(range(len(self.layers))):
+                    linear_cache, activation_cache, dropout_cache = caches[l]
+                    activation = self.activations[l]
 
-                # Activation Backward
-                if activation == 'relu':
-                    dZ = relu_backward(dA, activation_cache)
-                elif activation == 'sigmoid':
-                    dZ = sigmoid_backward(dA, activation_cache)
-                elif activation == 'lrelu':
-                    dZ = lrelu_backward(dA, activation_cache)
-                elif activation == 'tanh':
-                    dZ = tanh_backward(dA, activation_cache)
+                    # Dropout Backward
+                    dA *= dropout_cache
+                    dZ = dA
 
-                X, W = linear_cache
-                grads[f'W{l}'] = X.T.dot(dZ) / X.shape[0]
-                grads[f'b{l}'] = np.sum(dZ, axis=0, keepdims=True) / X.shape[0]
-                dA = dZ.dot(W.T)
+                    # Activation Backward
+                    if activation == 'relu':
+                        dZ = relu_backward(dA, activation_cache)
+                    elif activation == 'sigmoid':
+                        dZ = sigmoid_backward(dA, activation_cache)
+                    elif activation == 'lrelu':
+                        dZ = lrelu_backward(dA, activation_cache)
+                    elif activation == 'tanh':
+                        dZ = tanh_backward(dA, activation_cache)
 
-            self.params = self.optimizer.optimize(self.params, grads)
+                    X, W = linear_cache
+                    grads[f'W{l}'] = X.T.dot(dZ) / X.shape[0]
+                    grads[f'b{l}'] = np.sum(dZ, axis=0, keepdims=True) / X.shape[0]
+                    dA = dZ.dot(W.T)
 
-            print(f'Loss: {loss}')
+                self.params = self.optimizer.optimize(self.params, grads)
+
+            loss /= itr
+            if self.model_type == 'regression':
+                print(f'Epoch {epoch}/100 \t Loss: {loss:.4f}')
+            else:
+                train_preds = self.predict(X_train)
+                train_acc = classification_accuracy(y_train, train_preds)
+                if validation_data:
+                    val_preds = self.predict(validation_data[0])
+                    valid_acc = classification_accuracy(validation_data[1], val_preds)
+                    print(f'Epoch {epoch}/100 \t Loss: {loss:.4f} \t Train_acc: {train_acc:.4f} \t Validation_acc: {valid_acc:.4f}')
+                else:
+                    print(f'Epoch {epoch}/100 \t Loss: {loss:.4f} \t Train_acc: {train_acc:.4f}')
 
     def predict(self, X_test):
         out_layer, _ = self._forward(X_test, dropout=False)
