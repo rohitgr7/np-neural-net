@@ -45,22 +45,23 @@ class NeuralNet:
 
         # Optimizer
         if not isinstance(optimizer, str):
-            self.optimizer = optimizers
+            self.optimizer = optimizer
 
-        if optimizer == 'sgd':
-            self.optimizer = SGD(learning_rate)
+        else:
+            if optimizer == 'sgd':
+                self.optimizer = SGD(learning_rate)
 
-        elif optimizer == 'sgd_m':
-            self.optimizer = SGDMom(learning_rate)
+            elif optimizer == 'sgd_m':
+                self.optimizer = SGDMom(learning_rate)
 
-        elif optimizer == 'adagrad':
-            self.optimizer = AdaGrad(learning_rate)
+            elif optimizer == 'adagrad':
+                self.optimizer = AdaGrad(learning_rate)
 
-        elif optimizer == 'rmsprop':
-            self.optimizer = RMSProp(learning_rate)
+            elif optimizer == 'rmsprop':
+                self.optimizer = RMSProp(learning_rate)
 
-        elif optimizer == 'adam':
-            self.optimizer = Adam(learning_rate)
+            elif optimizer == 'adam':
+                self.optimizer = Adam(learning_rate)
 
         # Loss
         if loss == 'mean_squared_error':

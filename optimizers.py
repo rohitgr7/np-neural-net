@@ -13,14 +13,15 @@ def _init_hparams(params):
 # SGD
 class SGD:
 
-    def __init__(self, learning_rate):
+    def __init__(self, learning_rate, wt=0.):
         self.learning_rate = learning_rate
+        self.wt = wt
 
     def optimize(self, *args):
         params, grads, _ = args
 
         for k in list(params.keys()):
-            params[k] -= self.learning_rate * grads[k]
+            params[k] -= self.learning_rate * grads[k] + self.learning_rate * self.wt * params[k]
 
         return params
 
@@ -28,9 +29,10 @@ class SGD:
 # SGD Momentum
 class SGDMom:
 
-    def __init__(self, learning_rate, gamma=0.9):
+    def __init__(self, learning_rate, wt=0., gamma=0.9):
         self.init_hp = False
         self.learning_rate = learning_rate
+        self.wt = wt
         self.gamma = gamma
 
     def optimize(self, *args):
@@ -41,8 +43,8 @@ class SGDMom:
             self.init_hp = True
 
         for k in list(params.keys()):
-            self.momentum[k] = self.gamma * self.momentum[k] - self.learning_rate * grads[k]
-            params[k] += self.momentum[k]
+            self.momentum[k] = self.gamma * self.momentum[k] + self.learning_rate * grads[k]
+            params[k] -= self.momentum[k] + self.learning_rate * self.wt * params[k]
 
         return params
 
@@ -50,9 +52,10 @@ class SGDMom:
 # AdaGrad
 class AdaGrad:
 
-    def __init__(self, learning_rate, epsilon=1e-8):
+    def __init__(self, learning_rate, wt=0., epsilon=1e-8):
         self.init_hp = False
         self.learning_rate = learning_rate
+        self.wt = wt
         self.epsilon = epsilon
 
     def optimize(self, *args):
@@ -64,7 +67,7 @@ class AdaGrad:
 
         for k in list(params.keys()):
             self.cache[k] += grads[k]**2
-            params[k] -= (self.learning_rate * grads[k]) / (self.cache[k] ** 0.5 + self.epsilon)
+            params[k] -= (self.learning_rate * grads[k]) / (self.cache[k] ** 0.5 + self.epsilon) + self.learning_rate * self.wt * params[k]
 
         return params
 
@@ -72,9 +75,10 @@ class AdaGrad:
 # RMSProp
 class RMSProp:
 
-    def __init__(self, learning_rate, beta=0.9, epsilon=1e-8):
+    def __init__(self, learning_rate, wt=0., beta=0.9, epsilon=1e-8):
         self.init_hp = False
         self.learning_rate = learning_rate
+        self.wt = wt
         self.beta = beta
         self.epsilon = epsilon
 
@@ -87,7 +91,7 @@ class RMSProp:
 
         for k in list(params.keys()):
             self.cache[k] = self.beta * self.cache[k] + (1 - self.beta) * (grads[k]**2)
-            params[k] -= (self.learning_rate * grads[k]) / (self.cache[k] ** 0.5 + self.epsilon)
+            params[k] -= (self.learning_rate * grads[k]) / (self.cache[k] ** 0.5 + self.epsilon) + self.learning_rate * self.wt * params[k]
 
         return params
 
@@ -95,9 +99,10 @@ class RMSProp:
 # Adam
 class Adam:
 
-    def __init__(self, learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-8):
+    def __init__(self, learning_rate, wt=0., beta1=0.9, beta2=0.999, epsilon=1e-8):
         self.init_hp = False
         self.learning_rate = learning_rate
+        self.wt = wt
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
@@ -116,6 +121,6 @@ class Adam:
             corr_first_momentum = self.first_momentum[k] / (1 - self.beta1**itr)
             corr_second_momentum = self.second_momentum[k] / (1 - self.beta2**itr)
 
-            params[k] -= (self.learning_rate * corr_first_momentum) / (corr_second_momentum**0.5 + self.epsilon)
+            params[k] -= (self.learning_rate * corr_first_momentum) / (corr_second_momentum**0.5 + self.epsilon) + self.learning_rate * self.wt * params[k]
 
         return params
