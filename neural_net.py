@@ -22,7 +22,8 @@ class NeuralNet:
         if activations is None:
             activations = ['linear'] * len(layers)
 
-        assert len(layers) == len(activations) == len(keep_probs) == len(lalpha)
+        assert len(layers) == len(activations) == len(
+            keep_probs) == len(lalpha)
 
         self.layers = layers
         self.activations = activations
@@ -46,7 +47,6 @@ class NeuralNet:
         # Optimizer
         if not isinstance(optimizer, str):
             self.optimizer = optimizer
-
         else:
             if optimizer == 'sgd':
                 self.optimizer = SGD(learning_rate)
@@ -64,15 +64,18 @@ class NeuralNet:
                 self.optimizer = Adam(learning_rate)
 
         # Loss
-        if loss == 'mean_squared_error':
-            self.loss_fn = MSE()
-            self.model_type = 'regression'
-        elif loss == 'binary_crossentropy':
-            self.loss_fn = BinaryCrossEntropy()
-        elif loss == 'categorical_crossentropy':
-            self.loss_fn = SoftmaxCrossEntropy()
-        elif loss == 'sparse_categorical_crossentropy':
-            self.loss_fn = SparseSoftmaxCrossEntropy()
+        if not isinstance(loss, 'str'):
+            self.loss_fn = loss
+        else
+           if loss == 'mean_squared_error':
+                self.loss_fn = MSE()
+                self.model_type = 'regression'
+            elif loss == 'binary_crossentropy':
+                self.loss_fn = BinaryCrossEntropy()
+            elif loss == 'categorical_crossentropy':
+                self.loss_fn = SoftmaxCrossEntropy()
+            elif loss == 'sparse_categorical_crossentropy':
+                self.loss_fn = SparseSoftmaxCrossEntropy()
 
     def _forward(self, inp_layer, dropout=False):
         caches = []
@@ -99,13 +102,15 @@ class NeuralNet:
                 out_layer, activation_cache = sigmoid_forward(out_layer)
 
             elif activation == 'lrelu':
-                out_layer, activation_cache = lrelu_forward(out_layer, self.lalpha[l])
+                out_layer, activation_cache = lrelu_forward(
+                    out_layer, self.lalpha[l])
 
             elif activation == 'tanh':
                 out_layer, activation_cache = tanh_forward(out_layer)
 
             # Dropout
-            dropout_mask = np.random.rand(out_layer.shape[0], out_layer.shape[1]) < keep_prob
+            dropout_mask = np.random.rand(
+                out_layer.shape[0], out_layer.shape[1]) < keep_prob
             out_layer = out_layer * dropout_mask
             out_layer /= keep_prob
 
@@ -167,7 +172,8 @@ class NeuralNet:
 
                 if validation_data:
                     val_preds = self.predict(validation_data[0])
-                    valid_acc = classification_accuracy(validation_data[1], val_preds)
+                    valid_acc = classification_accuracy(
+                        validation_data[1], val_preds)
 
                     print(f'Epoch {epoch}/100 \t Loss: {loss:.4f} \t Train_acc: {train_acc:.4f} \t Validation_acc: {valid_acc:.4f}')
 
